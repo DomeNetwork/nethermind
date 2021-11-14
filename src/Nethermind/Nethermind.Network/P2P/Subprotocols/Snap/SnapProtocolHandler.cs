@@ -62,7 +62,14 @@ namespace Nethermind.Network.P2P.Subprotocols.Snap
             add { }
             remove { }
         }
+        
+        public override string Name => "snap1";
+        protected override TimeSpan InitTimeout => Timeouts.Eth;
 
+        public override byte ProtocolVersion => 1;
+        public override string ProtocolCode => Protocol.Snap;
+        public override int MessageIdSpaceSize => 8;
+        
         public override void Init()
         {
             ProtocolInitialized?.Invoke(this, new ProtocolInitializedEventArgs(this));
@@ -158,7 +165,7 @@ namespace Nethermind.Network.P2P.Subprotocols.Snap
         {
             throw new NotImplementedException();
         }
-        
+            
         private bool CheckIfEthStatusMsgReceived()
         {
             if (_ethStatusReceived)
