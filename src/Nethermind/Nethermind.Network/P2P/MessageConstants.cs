@@ -17,10 +17,10 @@
 
 using System;
 
-namespace Nethermind.Network.P2P.Subprotocols.Eth.V66
+namespace Nethermind.Network.P2P
 {
-    internal static class RandomExtensions
+    internal class MessageConstants
     {
-        public static long NextLong(this Random random) => ((long)random.Next() << 32) | (long)random.Next();
+        public static readonly Random Random = new();
     }
 }

@@ -20,7 +20,7 @@ using Nethermind.Core.Extensions;
 using Nethermind.Network.P2P.Messages;
 using NUnit.Framework;
 
-namespace Nethermind.Network.Test.P2P.Subprotocols.Eth.V62
+namespace Nethermind.Network.Test.P2P
 {
     public static class SerializerTester
     {
