@@ -300,7 +300,7 @@ namespace Nethermind.Serialization.Rlp
         {
             if (value == 0L)
             {
-                EncodeEmptyArray();
+                EncodeEmptyByteArray();
                 return;
             }
 
@@ -1085,7 +1085,7 @@ namespace Nethermind.Serialization.Rlp
             WriteByte(EmptySequenceByte);
         }
 
-        public void EncodeEmptyArray()
+        public void EncodeEmptyByteArray()
         {
             WriteByte(EmptyArrayByte);
         }
