@@ -103,7 +103,6 @@ namespace Nethermind.State.Proofs
         public AccountProofCollector(Address address, UInt256[] storageKeys)
             : this(address, storageKeys.Select(ToKey).ToArray())
         {
-            _accountProof.Address = _address = address ?? throw new ArgumentNullException(nameof(address));
         }
 
         public AccountProof BuildResult()

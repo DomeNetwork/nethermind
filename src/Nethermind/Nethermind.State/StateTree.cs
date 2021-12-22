@@ -1,4 +1,4 @@
-﻿//  Copyright (c) 2021 Demerzel Solutions Limited
+//  Copyright (c) 2021 Demerzel Solutions Limited
 //  This file is part of the Nethermind library.
 // 
 //  The Nethermind library is free software: you can redistribute it and/or modify
@@ -20,6 +20,7 @@ using Nethermind.Core.Crypto;
 using Nethermind.Db;
 using Nethermind.Logging;
 using Nethermind.Serialization.Rlp;
+using Nethermind.State.SnapDb;
 using Nethermind.Trie;
 using Nethermind.Trie.Pruning;
 
@@ -29,21 +30,22 @@ namespace Nethermind.State
     {
         private readonly AccountDecoder _decoder = new();
         
-        [DebuggerStepThrough]
+        //[DebuggerStepThrough]
         public StateTree()
             : base(new MemDb(), Keccak.EmptyTreeHash, true, true, NullLogManager.Instance)
         {
             TrieType = TrieType.State;
         }
 
-        [DebuggerStepThrough]
-        public StateTree(ITrieStore? store, ILogManager? logManager)
+        //[DebuggerStepThrough]
+        public StateTree(ITrieStore? store, ILogManager? logManager, ISortedAccounts sortedAccounts = null)
             : base(store, Keccak.EmptyTreeHash, true, true, logManager)
         {
             TrieType = TrieType.State;
+            _sortedAccounts = sortedAccounts;
         }
 
-        [DebuggerStepThrough]
+        //[DebuggerStepThrough]
         public Account? Get(Address address, Keccak? rootHash = null)
         {
             byte[]? bytes = Get(ValueKeccak.Compute(address.Bytes).BytesAsSpan, rootHash);
@@ -55,7 +57,7 @@ namespace Nethermind.State
             return _decoder.Decode(bytes.AsRlpStream());
         }
         
-        [DebuggerStepThrough]
+        //[DebuggerStepThrough]
         internal Account? Get(Keccak keccak) // for testing
         {
             byte[]? bytes = Get(keccak.Bytes);
@@ -68,17 +70,27 @@ namespace Nethermind.State
         }
 
         private static readonly Rlp EmptyAccountRlp = Rlp.Encode(Account.TotallyEmpty);
+        private readonly ISortedAccounts _sortedAccounts;
 
         public void Set(Address address, Account? account)
         {
-            ValueKeccak keccak = ValueKeccak.Compute(address.Bytes);
-            Set(keccak.BytesAsSpan, account is null ? null : account.IsTotallyEmpty ? EmptyAccountRlp : Rlp.Encode(account));
+            Keccak keccak = Keccak.Compute(address.Bytes);
+            Set(keccak.Bytes, account is null ? null : account.IsTotallyEmpty ? EmptyAccountRlp : Rlp.Encode(account));
+
+            if(_sortedAccounts != null && account != null)
+            {
+                _sortedAccounts.AddAccount(keccak);
+            }
         }
         
         [DebuggerStepThrough]
         internal void Set(Keccak keccak, Account? account) // for testing
         {
             Set(keccak.Bytes, account is null ? null : account.IsTotallyEmpty ? EmptyAccountRlp : Rlp.Encode(account));
+            if (_sortedAccounts != null && account != null)
+            {
+                _sortedAccounts.AddAccount(keccak);
+            }
         }
     }
 }

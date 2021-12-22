@@ -308,7 +308,7 @@ namespace Nethermind.Trie
             }
         }
 
-        [DebuggerStepThrough]
+        //[DebuggerStepThrough]
         public byte[]? Get(Span<byte> rawKey, Keccak? rootHash = null)
         {
             int nibblesCount = 2 * rawKey.Length;
@@ -322,7 +322,7 @@ namespace Nethermind.Trie
             return result;
         }
 
-        [DebuggerStepThrough]
+        //[DebuggerStepThrough]
         public void Set(Span<byte> rawKey, byte[] value)
         {
             if (_logger.IsTrace)
@@ -338,7 +338,7 @@ namespace Nethermind.Trie
             if (array != null) ArrayPool<byte>.Shared.Return(array);
         }
 
-        [DebuggerStepThrough]
+        //[DebuggerStepThrough]
         public void Set(Span<byte> rawKey, Rlp? value)
         {
             Set(rawKey, value is null ? Array.Empty<byte>() : value.Bytes);

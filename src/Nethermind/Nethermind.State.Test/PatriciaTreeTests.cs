@@ -82,5 +82,27 @@ namespace Nethermind.Store.Test
 
             Assert.AreEqual(2, db.Keys.Count);
         }
+
+        [Test]
+        public void Test01()
+        {
+            Account accountA = new Account(1);
+            Account accountB = new Account(2);
+            Account accountC = new Account(3);
+            Account accountD = new Account(4);
+            Account accountE = new Account(5);
+
+            StateTree stateTree = new StateTree();
+            stateTree.Set(TestItem.AddressA, accountA);
+            stateTree.Set(TestItem.AddressB, accountB);
+            stateTree.Set(TestItem.AddressC, accountC);
+            stateTree.Set(TestItem.AddressD, accountD);
+            stateTree.Set(TestItem.AddressE, accountE);
+
+            stateTree.Commit(0);
+
+            Account accountRestored = stateTree.Get(TestItem.AddressA);
+            Assert.AreEqual((UInt256)2, accountRestored.Balance);
+        }
     }
 }
