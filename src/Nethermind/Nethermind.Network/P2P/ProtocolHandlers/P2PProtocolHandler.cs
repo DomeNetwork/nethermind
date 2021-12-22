@@ -1,4 +1,4 @@
-﻿//  Copyright (c) 2021 Demerzel Solutions Limited
+//  Copyright (c) 2021 Demerzel Solutions Limited
 //  This file is part of the Nethermind library.
 // 
 //  The Nethermind library is free software: you can redistribute it and/or modify
@@ -307,20 +307,6 @@ namespace Nethermind.Network.P2P.ProtocolHandlers
             if(NetworkDiagTracer.IsEnabled)
                 NetworkDiagTracer.ReportDisconnect(Session.Node.Address, $"Local {disconnectReason} {details}");
         }
-
-        protected override TimeSpan InitTimeout => Timeouts.P2PHello;
-
-        public static readonly IEnumerable<Capability> DefaultCapabilities = new Capability[]
-        {
-            new(Protocol.Eth, 62),
-            new(Protocol.Eth, 63),
-            new(Protocol.Eth, 64),
-            new(Protocol.Eth, 65),
-            new(Protocol.Eth, 66),
-            // new Capability(Protocol.Les, 3)
-        };
-
-        private readonly List<Capability> SupportedCapabilities = DefaultCapabilities.ToList();
         
         private void SendHello()
         {

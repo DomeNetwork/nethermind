@@ -1,4 +1,4 @@
-﻿//  Copyright (c) 2021 Demerzel Solutions Limited
+//  Copyright (c) 2021 Demerzel Solutions Limited
 //  This file is part of the Nethermind library.
 // 
 //  The Nethermind library is free software: you can redistribute it and/or modify
@@ -48,7 +48,7 @@ namespace Nethermind.Network.P2P.Subprotocols.Snap
         /// <summary>
         /// Currently we use ETH Status msg but it's probable that SNAP will get own Status msg in the future
         /// </summary>
-        private bool _ethStatusReceived;
+        //private bool _ethStatusReceived;
         
         public SnapProtocolHandler(ISession session, 
             INodeStatsManager nodeStats, 
