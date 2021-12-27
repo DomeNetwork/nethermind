@@ -63,8 +63,10 @@ namespace Nethermind.State.Proofs
 
         /// <summary>
         /// Verifies multiple proofs - address paths from the bottom to the root.
+        /// Proofs are aligned one after another. Each proof should start with a root node to be proved correct. 
         /// </summary>
-        /// <returns>True - if all proofs are proved to be correct</returns>
+        /// <returns>True - if all proofs are proved to be correct
+        /// List of proved values</returns>
         public static (bool provedToBeCorrect, IList<byte[]?> provedValues) VerifyMultipleProofs(byte[][] proofs, Keccak root)
         {
             if (proofs.Length == 0)

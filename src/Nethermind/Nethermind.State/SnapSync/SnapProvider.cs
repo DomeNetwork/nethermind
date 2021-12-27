@@ -5,52 +5,54 @@ using System.Text;
 using System.Threading.Tasks;
 using Nethermind.Core.Crypto;
 using Nethermind.Serialization.Rlp;
+using Nethermind.State.Proofs;
 
 namespace Nethermind.State.SnapSync
 {
     public class SnapProvider
     {
         private readonly StateTree _tree;
-        private SortedDictionary<Keccak, Keccak> _sortedAccountLookup = new();
+        private SortedSet<Keccak> _sortedAddressHashes = new();
+
+        public Keccak RootHash => _tree.RootHash;
 
         public SnapProvider(StateTree tree)
         {
             _tree = tree;
         }
 
-
-
-        //public bool AddAccountRange(Keccak expectedRootHash, Keccak startingHash, AccountWithAddressHash[] accounts, byte[][] proofs)
-        //{
-        //    bool proved = ProveRange(expectedRootHash, startingHash, accounts, proofs);
-
-        //    if(proved)
-        //    {
-        //        for (int i = 0; i < accounts.Length; i++)
-        //        {
-        //            AccountWithAddressHash account = accounts[i];
-
-        //            Rlp accountRlp = _tree.Set(account.AddressHash, account.Account);
-        //            _sortedLookup[account.AddressHash] = 
-        //        }
-
-        //        _tree.Commit()
-        //    }
-        //    else
-        //    {
-        //        return false;
-        //    }
-        //}
-
-        //public void AddAccountHash(Keccak addressHash, Keccak accountHash)
-        //{
-        //    _sortedLookup[addressHash] = accountHash;
-        //}
-
-        private bool AddAccountRange(Keccak expectedRootHash, Keccak startingHash, AccountWithAddressHash[] accounts, byte[][] proofs)
+        public bool AddAccountRange(long blockNumber, Keccak expectedRootHash, Keccak startingHash, AccountWithAddressHash[] accounts, byte[][] proofs)
         {
+            (bool proved , _) = ProofVerifier.VerifyMultipleProofs(proofs, expectedRootHash);
+
+            if(!proved)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < accounts.Length; i++)
+            {
+                AccountWithAddressHash account = accounts[i];
+
+                Rlp accountRlp = _tree.Set(account.AddressHash, account.Account);
+                _sortedAddressHashes.Add(account.AddressHash);
+            }
+
+            _tree.Commit(blockNumber);
 
             return true;
         }
+
+        //public AccountRange GetNextAccountRange()
+        //{
+        //    if (_sortedAddressHashes.Count == 0)
+        //    {
+        //        return new(SyncRootHash, Keccak.Zero, Keccak.MaxValue);
+        //    }
+
+        //    Keccak last = _sortedAddressHashes.Last();  // TODO: calculate next Keccak after the last account (+1)
+
+        //    return new(SyncRootHash, last, Keccak.MaxValue);    // TODO: calculate LimitHash instead MaxValue
+        //}
     }
 }

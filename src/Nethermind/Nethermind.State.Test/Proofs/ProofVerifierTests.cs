@@ -31,7 +31,7 @@ using Nethermind.Trie;
 using Nethermind.Trie.Pruning;
 using NUnit.Framework;
 
-namespace Nethermind.Store.Test.SnapSync
+namespace Nethermind.Store.Test.Proofs
 {
     [TestFixture]
     public class ProofVerifierTests
