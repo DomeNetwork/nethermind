@@ -66,7 +66,7 @@ namespace Nethermind.State.Proofs
             return bytes;
         }
 
-        internal AccountProofCollector(byte[] hashedAddress, params byte[][] storageKeys)
+        public AccountProofCollector(byte[] hashedAddress, params byte[][] storageKeys)
         {
             storageKeys ??= Array.Empty<byte[]>();
             _fullAccountPath = Nibbles.FromBytes(hashedAddress);

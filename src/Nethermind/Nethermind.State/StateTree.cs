@@ -20,7 +20,6 @@ using Nethermind.Core.Crypto;
 using Nethermind.Db;
 using Nethermind.Logging;
 using Nethermind.Serialization.Rlp;
-using Nethermind.State.SnapDb;
 using Nethermind.Trie;
 using Nethermind.Trie.Pruning;
 
@@ -29,7 +28,8 @@ namespace Nethermind.State
     public class StateTree : PatriciaTree
     {
         private readonly AccountDecoder _decoder = new();
-        
+        private static readonly Rlp EmptyAccountRlp = Rlp.Encode(Account.TotallyEmpty);
+
         //[DebuggerStepThrough]
         public StateTree()
             : base(new MemDb(), Keccak.EmptyTreeHash, true, true, NullLogManager.Instance)
@@ -38,11 +38,10 @@ namespace Nethermind.State
         }
 
         //[DebuggerStepThrough]
-        public StateTree(ITrieStore? store, ILogManager? logManager, ISortedAccounts sortedAccounts = null)
+        public StateTree(ITrieStore? store, ILogManager? logManager)
             : base(store, Keccak.EmptyTreeHash, true, true, logManager)
         {
             TrieType = TrieType.State;
-            _sortedAccounts = sortedAccounts;
         }
 
         //[DebuggerStepThrough]
@@ -69,28 +68,20 @@ namespace Nethermind.State
             return _decoder.Decode(bytes.AsRlpStream());
         }
 
-        private static readonly Rlp EmptyAccountRlp = Rlp.Encode(Account.TotallyEmpty);
-        private readonly ISortedAccounts _sortedAccounts;
-
         public void Set(Address address, Account? account)
         {
             Keccak keccak = Keccak.Compute(address.Bytes);
-            Set(keccak.Bytes, account is null ? null : account.IsTotallyEmpty ? EmptyAccountRlp : Rlp.Encode(account));
-
-            if(_sortedAccounts != null && account != null)
-            {
-                _sortedAccounts.AddAccount(keccak);
-            }
+            Set(keccak, account);
         }
         
         [DebuggerStepThrough]
-        internal void Set(Keccak keccak, Account? account) // for testing
+        public Rlp Set(Keccak keccak, Account? account) 
         {
-            Set(keccak.Bytes, account is null ? null : account.IsTotallyEmpty ? EmptyAccountRlp : Rlp.Encode(account));
-            if (_sortedAccounts != null && account != null)
-            {
-                _sortedAccounts.AddAccount(keccak);
-            }
+            Rlp rlp = account is null ? null : account.IsTotallyEmpty ? EmptyAccountRlp : Rlp.Encode(account);
+
+            Set(keccak.Bytes, rlp);
+
+            return rlp;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿//  Copyright (c) 2021 Demerzel Solutions Limited
+//  Copyright (c) 2021 Demerzel Solutions Limited
 //  This file is part of the Nethermind library.
 // 
 //  The Nethermind library is free software: you can redistribute it and/or modify
@@ -449,11 +449,11 @@ namespace Nethermind.Trie
 
         public void SetChild(int i, TrieNode? node)
         {
-            if (IsSealed)
-            {
-                throw new InvalidOperationException(
-                    $"{nameof(TrieNode)} {this} is already sealed when setting a child.");
-            }
+            //if (IsSealed)
+            //{
+            //    throw new InvalidOperationException(
+            //        $"{nameof(TrieNode)} {this} is already sealed when setting a child.");
+            //}
 
             InitData();
             int index = IsExtension ? i + 1 : i;

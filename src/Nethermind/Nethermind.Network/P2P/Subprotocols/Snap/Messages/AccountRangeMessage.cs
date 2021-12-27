@@ -1,4 +1,4 @@
-﻿//  Copyright (c) 2021 Demerzel Solutions Limited
+//  Copyright (c) 2021 Demerzel Solutions Limited
 //  This file is part of the Nethermind library.
 // 
 //  The Nethermind library is free software: you can redistribute it and/or modify
@@ -25,10 +25,10 @@ namespace Nethermind.Network.P2P.Subprotocols.Snap.Messages
     public class AccountRangeMessage : SnapMessageBase
     {
         public override int PacketType => SnapMessageCode.AccountRange;
-        
+
         /// <summary>
         /// List of consecutive accounts from the trie
-        /// TODO: add address hashes
+        /// TODO: add address hashes (use AccountWithAddressHash)
         /// </summary>
         public Account[] Accounts { get; set; }
 

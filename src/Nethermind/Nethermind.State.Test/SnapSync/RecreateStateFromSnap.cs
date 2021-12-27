@@ -16,11 +16,15 @@
 
 #nullable enable 
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Nethermind.Core;
 using Nethermind.Core.Crypto;
 using Nethermind.Core.Extensions;
 using Nethermind.Core.Test.Builders;
 using Nethermind.Db;
+using Nethermind.Int256;
 using Nethermind.Logging;
 using Nethermind.Serialization.Rlp;
 using Nethermind.State;
@@ -32,7 +36,7 @@ using NUnit.Framework;
 namespace Nethermind.Store.Test
 {
     [TestFixture]
-    public class SnapStateTests
+    public class RecreateStateFromSnap
     {
         private readonly Account _account0 = Build.An.Account.WithBalance(0).TestObject;
         private readonly Account _account1 = Build.An.Account.WithBalance(1).TestObject;
@@ -60,66 +64,55 @@ namespace Nethermind.Store.Test
         }
 
         [Test]
-        public void TwoAccounts()
-        {
-            MemDb db = new MemDb();
-            TrieStore? store = new TrieStore(db, LimboLogs.Instance);
-            StateTree tree = new StateTree(store, LimboLogs.Instance);
-            tree.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001000001"), _account0);
-            tree.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001000002"), _account1);
-
-            tree.Commit(0);
-
-            AccountDecoder accountDecoder = new AccountDecoder();
-
-#pragma warning disable CS0219 // Variable is assigned but its value is never used
-            string? ext = "0xf842a01000000000000000000000000000000000000000000000000000000000100000a05b3c471437cf4bfcd450811e91de4a0d00a82a05bde6285b655a817651bd2145";
-            string branch = "0xf85180a05911f24d96912350de50f297c2d34d5d10e136757bf4cfff5fa41bfca219554aa07cb2e18773f0d6e68a3fa7510be38f089f9cdaeb04d37d801e854b3fd47748fe8080808080808080808080808080";
-
-            byte[][] proofs = new byte[][] {Bytes.FromHexString(ext), Bytes.FromHexString(branch), accountDecoder.Encode(_account0).Bytes};
-
-            ProofVerifier.Verify(proofs, tree.RootHash);
-#pragma warning restore CS0219 // Variable is assigned but its value is never used
-        }
-
-
-        [Test]
-        public void FromKarim()
-        {
-            MemDb db = new MemDb();
-            TrieStore? store = new TrieStore(db, LimboLogs.Instance);
-            
-            StateTree tree = new StateTree(store, LimboLogs.Instance);
-            Account account = new Account(new Int256.UInt256(90_000_000_000_000_000L));
-
-            AccountDecoder accountDecoder = new AccountDecoder();
-
-#pragma warning disable CS0219 // Variable is assigned but its value is never used
-            string branch = "0xf8f1a0668a54c4a82e8830ac43e2753ce7f8ae5330bdef5eea54e63316a4d7479ed078a0c5eb07f6128d0a8520e072e18d2bbeddb471fbd4d5fe85c7de378ba87ba8ac10808080a006eb8770cc0678269b16dde0c2fa3112a3861f624b121a3a96ac36b29205edec808080a0c65d37ec90d7b7d74ea736285b535a8c2123cd0d8b0c1dc70c1ec7d90423ee3f80a0a28f1e7040e0c081c3c7896eba90469ab7fea432ef51fe7041c0e4a97a771eda80a02579c4c22a19872ddf077b34446366913f783a5dc4657b14d1024a145af7c23ea046a729895a4cb6d718b79af220981dc7cbb4018265bbd89f5950a31d472d37498080";
-            string leaf = "0xf873a03db15b18b2c004bb8dae65a6875cddf207de4e97a3d34ef71cd7f6cc7fbb94eab850f84e808a130ee8e7179044400000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
-
-            byte[][] proofs = new byte[][] { Bytes.FromHexString(branch), Bytes.FromHexString(leaf)};
-
-            var res = ProofVerifier.Verify(proofs, new Keccak("0xf1f80304eb6f3576de32bd43713fd7ed034783644a27900de46106c016370112"));
-
-
-#pragma warning restore CS0219 // Variable is assigned but its value is never used
-        }
-
-        [Test]
         public void TestSimpleTree_01()
         {
+            List<string> keys = new();
+
             MemDb db = new MemDb();
-            StateTree tree = new StateTree(new TrieStore(db, LimboLogs.Instance), LimboLogs.Instance);
+            TrieStore? store = new TrieStore(db, LimboLogs.Instance);
+
+            StateTree tree = new StateTree(store, LimboLogs.Instance);
             tree.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001101234"), _account0);
             tree.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001112345"), _account1);
-            //tree.Commit(0);
             tree.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001113456"), _account2);
             tree.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001114567"), _account3);
-            //tree.Commit(0);
             tree.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001123456"), _account4);
             tree.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001123457"), _account5);
             tree.Commit(0);
+
+            AccountProofCollector accountProofCollector = new(new Keccak("0000000000000000000000000000000000000000000000000000000001123457").Bytes);
+            tree.Accept(accountProofCollector, tree.RootHash);
+            AccountProof proof = accountProofCollector.BuildResult();
+
+            MemDb db2 = new MemDb();
+            TrieStore? store2 = new TrieStore(db2, LimboLogs.Instance);
+
+            StateTree tree2 = new StateTree(store2, LimboLogs.Instance);
+
+            List<TrieNode> nodes = new List<TrieNode>();
+            foreach (var p in proof.Proof!)
+            {
+                TrieNode node = new TrieNode(NodeType.Unknown, p);
+                node.ResolveNode(store2);
+                nodes.Add(node);
+                db2.Set(Keccak.Compute(p).Bytes, p);
+                // ADD FAKE nodes with child hashes
+            }
+
+            tree2.RootRef = nodes[0];
+            //nodes[0].SetChild(0, nodes[1]);
+            //nodes[1].SetChild(2, nodes[2]);
+            //nodes[2].SetChild(0, nodes[3]);
+            //nodes[3].SetChild(7, nodes[4]);
+
+            tree2.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001101234"), _account0);
+            tree2.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001112345"), _account1);
+            tree2.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001113456"), _account2);
+            tree2.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001114567"), _account3);
+            tree2.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001123456"), _account4);
+            tree2.Set(new Keccak("0000000000000000000000000000000000000000000000000000000001123457"), _account5);
+
+            tree2.Commit(0);
         }
 
         [Test]
@@ -128,12 +121,10 @@ namespace Nethermind.Store.Test
             MemDb db = new MemDb();
             var store = new TrieStore(db, LimboLogs.Instance);
             StateTree tree = new StateTree(store, LimboLogs.Instance);
-            tree.Set(new Keccak("1000000000000000000000000000000000000000000000000000000001101234"), _account0);
-            tree.Set(new Keccak("2000000000000000000000000000000000000000000000000000000001112345"), _account1);
+            tree.Set(new Keccak("1000000000000000000000000000000000000000000000000000000000000234"), _account0);
+            tree.Set(new Keccak("2000000000000000000000000000000000000000000000000000000000002341"), _account1);
+            tree.Set(new Keccak("2000000000000000000000000000000000000000000000000000000000002342"), _account2);
             tree.Commit(0);
-            Assert.AreEqual(7, db.WritesCount, "writes"); // extension, branch, leaf, extension, branch, 2x same leaf
-            Assert.AreEqual(7, Trie.Metrics.TreeNodeHashCalculations, "hashes");
-            Assert.AreEqual(7, Trie.Metrics.TreeNodeRlpEncodings, "encodings");
         }
 
         [Test]
