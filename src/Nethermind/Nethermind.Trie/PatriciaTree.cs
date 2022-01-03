@@ -64,7 +64,7 @@ namespace Nethermind.Trie
 
         private Keccak _rootHash = Keccak.EmptyTreeHash;
 
-        internal TrieNode? RootRef;
+        public TrieNode? RootRef;
 
         public PatriciaTree()
             : this(NullTrieStore.Instance, EmptyTreeHash, false, true, NullLogManager.Instance)
@@ -696,7 +696,7 @@ namespace Nethermind.Trie
                 byte[]? rlp = TrieStore.GetValueFromCurrentBatchOrStore(childNode.Keccak, null);
                 if (rlp != null)
                 {
-                    childNode.FullRlp = rlp;
+                    //childNode.FullRlp = rlp;
                 }
                 else
                 {

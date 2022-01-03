@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nethermind.Core;
 using Nethermind.Core.Crypto;
+using Nethermind.Logging;
 using Nethermind.Serialization.Rlp;
 using Nethermind.State.Proofs;
 using Nethermind.Trie;
@@ -13,36 +15,69 @@ namespace Nethermind.State.SnapSync
 {
     public class SnapProvider
     {
-        private readonly StateTree _tree;
+        //private readonly StateTree _tree;
+        private readonly TrieStore _store;
         private SortedSet<Keccak> _sortedAddressHashes = new();
 
-        public Keccak RootHash => _tree.RootHash;
-
-        public SnapProvider(StateTree tree)
+        public SnapProvider(StateTree tree, TrieStore store)
         {
-            _tree = tree;
+            //_tree = tree;
+            _store = store;
         }
 
-        public bool AddAccountRange(long blockNumber, Keccak expectedRootHash, Keccak startingHash, AccountWithAddressHash[] accounts, byte[][] proofs)
+        public Keccak? AddAccountRange(long blockNumber, Keccak expectedRootHash, Keccak startingHash, AccountWithAddressHash[] accounts, byte[][] proofs)
         {
-            (bool proved , _) = ProofVerifier.VerifyMultipleProofs(proofs, expectedRootHash);
+            // TODO: Check the accounts boundaries and sorting
 
-            if(!proved)
+            (bool proved, _) = ProofVerifier.VerifyMultipleProofs(proofs, expectedRootHash);
+
+            if (!proved)
             {
-                return false;
+                //TODO: log incorrect proofs
+                return null;
             }
 
-            for (int i = 0; i < accounts.Length; i++)
-            {
-                AccountWithAddressHash account = accounts[i];
+            IBatch batch = _store.GetOrStartNewBatch();
 
-                Rlp accountRlp = _tree.Set(account.AddressHash, account.Account);
-                _sortedAddressHashes.Add(account.AddressHash);
+            StateTree tree = new StateTree(_store, LimboLogs.Instance);
+
+            for (int i = 0; i < proofs.Length; i++)
+            {
+                byte[] proof = proofs[i];
+
+                var node = new TrieNode(NodeType.Unknown, proof);
+                node.ResolveNode(_store);
+                node.ResolveKey(_store, i == 0);
+
+                if (!node.IsLeaf)
+                {
+                    if (i == 0)
+                    {
+                        tree.RootRef = node;
+                    }
+                    else
+                    {
+                        batch[node.Keccak!.Bytes] = proof;
+                    }
+                }
             }
 
-            _tree.Commit(blockNumber);
+            foreach (var account in accounts)
+            {
+                tree.Set(account.AddressHash, account.Account, true);
+            }
 
-            return true;
+            //for (int i = 0; i < accounts.Length; i++)
+            //{
+            //    AccountWithAddressHash account = accounts[i];
+
+            //    Rlp accountRlp = tree.Set(account.AddressHash, account.Account);
+            //    _sortedAddressHashes.Add(account.AddressHash);
+            //}
+
+            tree.Commit(blockNumber);
+
+            return tree.RootHash;
         }
 
         public void RemoveMiddleChildren(ITrieNodeResolver resolver, byte[][] leftProof, byte[][] rightProof)

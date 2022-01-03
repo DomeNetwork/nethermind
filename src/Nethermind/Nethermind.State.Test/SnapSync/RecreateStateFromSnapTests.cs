@@ -91,9 +91,6 @@ namespace Nethermind.Store.Test
             MemDb db = new MemDb();
             TrieStore store = new TrieStore(db, LimboLogs.Instance);
             StateTree tree = new StateTree(store, LimboLogs.Instance);
-            SnapProvider snapProvider = new(tree);
-
-            snapProvider.RemoveMiddleChildren(store, firstProof!, lastProof!);
 
             IList<TrieNode> nodes = new List<TrieNode>();
 
@@ -137,6 +134,8 @@ namespace Nethermind.Store.Test
             tree.Set(accountsWithHashes[5].AddressHash, accountsWithHashes[5].Account, true);
 
             tree.Commit(0);
+
+            Assert.AreEqual(inputTree.RootHash, tree.RootHash);
         }
 
         [Test]
@@ -171,13 +170,14 @@ namespace Nethermind.Store.Test
             byte[][]? lastProof = accountProofCollector.BuildResult().Proof;
 
             MemDb db = new MemDb();
-            StateTree tree = new StateTree(new TrieStore(db, LimboLogs.Instance), LimboLogs.Instance);
+            TrieStore store = new TrieStore(db, LimboLogs.Instance);
+            StateTree tree = new StateTree(store, LimboLogs.Instance);
 
-            SnapProvider snapProvider = new(tree);
+            SnapProvider snapProvider = new(tree, store);
 
-            snapProvider.AddAccountRange(1, rootHash, Keccak.Zero, accountsWithHashes, firstProof!.Concat(lastProof!).ToArray());
+            Keccak? result = snapProvider.AddAccountRange(1, rootHash, Keccak.Zero, accountsWithHashes, firstProof!.Concat(lastProof!).ToArray());
             
-            Assert.AreEqual(rootHash, snapProvider.RootHash);
+            Assert.AreEqual(rootHash, result);
         }
 
 
@@ -207,8 +207,9 @@ namespace Nethermind.Store.Test
 
             // output state
             MemDb db = new MemDb();
-            StateTree tree = new StateTree(new TrieStore(db, LimboLogs.Instance), LimboLogs.Instance);
-            SnapProvider snapProvider = new(tree);
+            TrieStore store = new TrieStore(db, LimboLogs.Instance);
+            StateTree tree = new StateTree(store, LimboLogs.Instance);
+            SnapProvider snapProvider = new(tree, store);
 
             AccountProofCollector accountProofCollector = new(Keccak.Zero.Bytes);
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
@@ -217,7 +218,7 @@ namespace Nethermind.Store.Test
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
             byte[][]? lastProof = accountProofCollector.BuildResult().Proof;
 
-            snapProvider.AddAccountRange(1, rootHash, Keccak.Zero, accountsWithHashes[0..2], firstProof!.Concat(lastProof!).ToArray());
+            Keccak? result1 = snapProvider.AddAccountRange(1, rootHash, Keccak.Zero, accountsWithHashes[0..2], firstProof!.Concat(lastProof!).ToArray());
 
             accountProofCollector = new(accountsWithHashes[2].AddressHash.Bytes);
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
@@ -226,7 +227,7 @@ namespace Nethermind.Store.Test
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
             lastProof = accountProofCollector.BuildResult().Proof;
 
-            snapProvider.AddAccountRange(1, rootHash, accountsWithHashes[2].AddressHash, accountsWithHashes[2..4], firstProof!.Concat(lastProof!).ToArray());
+            Keccak? result2 = snapProvider.AddAccountRange(1, rootHash, accountsWithHashes[2].AddressHash, accountsWithHashes[2..4], firstProof!.Concat(lastProof!).ToArray());
 
             accountProofCollector = new(accountsWithHashes[4].AddressHash.Bytes);
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
@@ -235,9 +236,11 @@ namespace Nethermind.Store.Test
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
             lastProof = accountProofCollector.BuildResult().Proof;
 
-            snapProvider.AddAccountRange(1, rootHash, accountsWithHashes[4].AddressHash, accountsWithHashes[4..6], firstProof!.Concat(lastProof!).ToArray());
+            Keccak? result3 = snapProvider.AddAccountRange(1, rootHash, accountsWithHashes[4].AddressHash, accountsWithHashes[4..6], firstProof!.Concat(lastProof!).ToArray());
 
-            Assert.AreEqual(rootHash, snapProvider.RootHash);
+            Assert.AreEqual(rootHash, result1);
+            Assert.AreEqual(rootHash, result2);
+            Assert.AreEqual(rootHash, result3);
         }
 
         [Test]
@@ -266,8 +269,9 @@ namespace Nethermind.Store.Test
 
             // output state
             MemDb db = new MemDb();
-            StateTree tree = new StateTree(new TrieStore(db, LimboLogs.Instance), LimboLogs.Instance);
-            SnapProvider snapProvider = new(tree);
+            TrieStore store = new TrieStore(db, LimboLogs.Instance);
+            StateTree tree = new StateTree(store, LimboLogs.Instance);
+            SnapProvider snapProvider = new(tree, store);
 
             AccountProofCollector accountProofCollector = new(Keccak.Zero.Bytes);
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
@@ -276,7 +280,7 @@ namespace Nethermind.Store.Test
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
             byte[][]? lastProof = accountProofCollector.BuildResult().Proof;
 
-            snapProvider.AddAccountRange(1, rootHash, Keccak.Zero, accountsWithHashes[0..2], firstProof!.Concat(lastProof!).ToArray());
+            Keccak? result1 = snapProvider.AddAccountRange(1, rootHash, Keccak.Zero, accountsWithHashes[0..2], firstProof!.Concat(lastProof!).ToArray());
 
             accountProofCollector = new(accountsWithHashes[2].AddressHash.Bytes);
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
@@ -285,7 +289,8 @@ namespace Nethermind.Store.Test
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
             lastProof = accountProofCollector.BuildResult().Proof;
 
-            snapProvider.AddAccountRange(1, rootHash, accountsWithHashes[2].AddressHash, accountsWithHashes[3..4], firstProof!.Concat(lastProof!).ToArray());
+            // missing accountsWithHashes[2]
+            Keccak? result2 = snapProvider.AddAccountRange(1, rootHash, accountsWithHashes[2].AddressHash, accountsWithHashes[3..4], firstProof!.Concat(lastProof!).ToArray());
 
             accountProofCollector = new(accountsWithHashes[4].AddressHash.Bytes);
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
@@ -294,9 +299,11 @@ namespace Nethermind.Store.Test
             inputTree.Accept(accountProofCollector, inputTree.RootHash);
             lastProof = accountProofCollector.BuildResult().Proof;
 
-            snapProvider.AddAccountRange(1, rootHash, accountsWithHashes[4].AddressHash, accountsWithHashes[4..6], firstProof!.Concat(lastProof!).ToArray());
+            Keccak? result3 = snapProvider.AddAccountRange(1, rootHash, accountsWithHashes[4].AddressHash, accountsWithHashes[4..6], firstProof!.Concat(lastProof!).ToArray());
 
-            Assert.AreNotEqual(rootHash, snapProvider.RootHash);
+            Assert.AreEqual(rootHash, result1);
+            Assert.AreNotEqual(rootHash, result2);
+            Assert.AreEqual(rootHash, result3);
         }
 
         //[Test]
