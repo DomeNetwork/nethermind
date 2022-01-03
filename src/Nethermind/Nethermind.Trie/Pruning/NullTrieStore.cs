@@ -54,5 +54,10 @@ namespace Nethermind.Trie.Pruning
         }
         
         public void Dispose() { }
+
+        public byte[] GetValueFromCurrentBatchOrStore(Keccak keccak, IKeyValueStore? keyValueStore)
+        {
+            return Array.Empty<byte>();
+        }
     }
 }

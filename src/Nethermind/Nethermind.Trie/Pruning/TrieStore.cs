@@ -323,8 +323,7 @@ namespace Nethermind.Trie.Pruning
 
         internal byte[] LoadRlp(Keccak keccak, IKeyValueStore? keyValueStore)
         {
-            keyValueStore ??= _keyValueStore;
-            byte[]? rlp = _currentBatch?[keccak.Bytes] ?? keyValueStore[keccak.Bytes];
+            byte[]? rlp = GetValueFromCurrentBatchOrStore(keccak, keyValueStore);
 
             if (rlp is null)
             {
@@ -333,6 +332,13 @@ namespace Nethermind.Trie.Pruning
 
             Metrics.LoadedFromDbNodesCount++;
 
+            return rlp;
+        }
+
+        public byte[] GetValueFromCurrentBatchOrStore(Keccak keccak, IKeyValueStore? keyValueStore)
+        {
+            keyValueStore ??= _keyValueStore;
+            byte[]? rlp = _currentBatch?[keccak.Bytes] ?? keyValueStore[keccak.Bytes];
             return rlp;
         }
 
@@ -544,6 +550,13 @@ namespace Nethermind.Trie.Pruning
                     break;
                 }
             }
+        }
+
+        public IBatch GetOrStartNewBatch()
+        {
+            _currentBatch ??= _keyValueStore.StartBatch();
+
+            return _currentBatch;
         }
 
         #region Private

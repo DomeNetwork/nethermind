@@ -1,4 +1,4 @@
-﻿//  Copyright (c) 2021 Demerzel Solutions Limited
+//  Copyright (c) 2021 Demerzel Solutions Limited
 //  This file is part of the Nethermind library.
 // 
 //  The Nethermind library is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@ namespace Nethermind.Synchronization.SnapSync
     public class SnapSyncFeed : SyncFeed<AccountsSyncBatch?>, IDisposable
     {
         private readonly ISyncModeSelector _syncModeSelector;
-        private readonly ISnapStateProvider _stateProvider;
+        //private readonly ISnapStateProvider _stateProvider;
         private readonly IBlockTree _blockTree;
         private readonly ILogger _logger;
         public override bool IsMultiFeed => true;
@@ -39,13 +39,15 @@ namespace Nethermind.Synchronization.SnapSync
         {
             _blockTree = blockTree ?? throw new ArgumentNullException(nameof(blockTree));
             _syncModeSelector = syncModeSelector ?? throw new ArgumentNullException(nameof(syncModeSelector));
-            _stateProvider = stateProvider ?? throw new ArgumentNullException(nameof(stateProvider));
+            //_stateProvider = stateProvider ?? throw new ArgumentNullException(nameof(stateProvider));
             _logger = logManager.GetClassLogger() ?? throw new ArgumentNullException(nameof(logManager));
+
+            _syncModeSelector.Changed += SyncModeSelectorOnChanged;
         }
         
         public override async Task<AccountsSyncBatch?> PrepareRequest()
         {
-            AccountsSyncBatch request = new AccountsSyncBatch() { Request = _stateProvider.GetNextAccountRange() };
+            AccountsSyncBatch request = new AccountsSyncBatch(); // { Request = _stateProvider.GetNextAccountRange() };
             return await Task.FromResult(request);
         }
 
@@ -58,7 +60,7 @@ namespace Nethermind.Synchronization.SnapSync
             }
             else
             {
-                _stateProvider.AddAccounts(batch.Response);
+                //_stateProvider.AddAccounts(batch.Response);
                 return SyncResponseHandlingResult.OK;
             }
         }

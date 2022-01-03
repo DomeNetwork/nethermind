@@ -87,7 +87,7 @@ namespace Nethermind.State.Proofs
                         if (!new Rlp(proofs[i - 1]).ToString(false).Contains(proofHash.ToString(false)))
                         {
                             return (false, provedValues);
-        }
+                        }
                     }
                     else
                     {

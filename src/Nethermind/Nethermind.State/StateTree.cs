@@ -74,12 +74,12 @@ namespace Nethermind.State
             Set(keccak, account);
         }
         
-        [DebuggerStepThrough]
-        public Rlp Set(Keccak keccak, Account? account) 
+        //[DebuggerStepThrough]
+        public Rlp Set(Keccak keccak, Account? account, bool overwriteUnresolvableKeccaks = false) 
         {
             Rlp rlp = account is null ? null : account.IsTotallyEmpty ? EmptyAccountRlp : Rlp.Encode(account);
 
-            Set(keccak.Bytes, rlp);
+            Set(keccak.Bytes, rlp, overwriteUnresolvableKeccaks);
 
             return rlp;
         }

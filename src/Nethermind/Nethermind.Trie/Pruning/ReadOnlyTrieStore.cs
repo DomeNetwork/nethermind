@@ -50,7 +50,9 @@ namespace Nethermind.Trie.Pruning
         public void FinishBlockCommit(TrieType trieType, long blockNumber, TrieNode? root) { }
 
         public void HackPersistOnShutdown() { }
-        
+
+        public byte[] GetValueFromCurrentBatchOrStore(Keccak keccak, IKeyValueStore? keyValueStore) => _trieStore.GetValueFromCurrentBatchOrStore(keccak, keyValueStore);
+
         public event EventHandler<ReorgBoundaryReached> ReorgBoundaryReached
         {
             add { }

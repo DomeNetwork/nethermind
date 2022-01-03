@@ -16,6 +16,7 @@
 
 using System;
 using Nethermind.Core;
+using Nethermind.Core.Crypto;
 
 namespace Nethermind.Trie.Pruning
 {
@@ -28,7 +29,10 @@ namespace Nethermind.Trie.Pruning
         void HackPersistOnShutdown();
         
         IReadOnlyTrieStore AsReadOnly(IKeyValueStore? keyValueStore);
-        
+
+        public byte[] GetValueFromCurrentBatchOrStore(Keccak keccak, IKeyValueStore? keyValueStore);
+
+
         event EventHandler<ReorgBoundaryReached>? ReorgBoundaryReached;
     }
 }

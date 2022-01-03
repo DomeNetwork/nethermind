@@ -66,7 +66,7 @@ namespace Nethermind.Synchronization.ParallelSync
         /// <summary>
         /// Stage of snap sync that state is being downloaded (accounts, storages, code, proofs)
         /// </summary>
-        SnapSync = FastBlocks | 2048,
+        SnapSync = 2048,
         
         All = WaitingForBlock | Disconnected | FastBlocks | FastSync | StateNodes | StateNodes | Full | DbLoad | FastHeaders | FastBodies | FastReceipts | SnapSync
     }

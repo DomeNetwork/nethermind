@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Nethermind.Core.Crypto;
 using Nethermind.Serialization.Rlp;
 using Nethermind.State.Proofs;
+using Nethermind.Trie;
+using Nethermind.Trie.Pruning;
 
 namespace Nethermind.State.SnapSync
 {
@@ -43,6 +45,41 @@ namespace Nethermind.State.SnapSync
             return true;
         }
 
+        public void RemoveMiddleChildren(ITrieNodeResolver resolver, byte[][] leftProof, byte[][] rightProof)
+        {
+            for (int i = leftProof.Length - 1; i > 0; i--)
+            {
+                TrieNode parentNode = new(NodeType.Unknown, leftProof[i - 1]);
+                parentNode.ResolveNode(NullTrieNodeResolver.Instance);
+
+                Keccak proofHash = Keccak.Compute(leftProof[i]);
+                
+
+                //if (proofHash != root)
+                //{
+                //    if (i > 0)
+                //    {
+                //        if (!new Rlp(proofs[i - 1]).ToString(false).Contains(proofHash.ToString(false)))
+                //        {
+                //            return (false, provedValues);
+                //        }
+                //    }
+                //    else
+                //    {
+                //        return (false, provedValues);
+                //    }
+                //}
+                //else
+                //{
+                //    TrieNode trieNode = new(NodeType.Unknown, proofs[leafIndex]);
+                //    trieNode.ResolveNode(null);
+                //    provedValues.Add(trieNode.Value);
+
+                //    leafIndex = i - 1;
+                //}
+            }
+
+        }
         //public AccountRange GetNextAccountRange()
         //{
         //    if (_sortedAddressHashes.Count == 0)

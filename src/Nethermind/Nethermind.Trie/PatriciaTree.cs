@@ -323,7 +323,7 @@ namespace Nethermind.Trie
         }
 
         //[DebuggerStepThrough]
-        public void Set(Span<byte> rawKey, byte[] value)
+        public void Set(Span<byte> rawKey, byte[] value, bool overwriteUnresolvableKeccaks = false)
         {
             if (_logger.IsTrace)
                 _logger.Trace($"{(value.Length == 0 ? $"Deleting {rawKey.ToHexString()}" : $"Setting {rawKey.ToHexString()} = {value.ToHexString()}")}");
@@ -334,14 +334,14 @@ namespace Nethermind.Trie
                 ? stackalloc byte[nibblesCount]
                 : array = ArrayPool<byte>.Shared.Rent(nibblesCount);
             Nibbles.BytesToNibbleBytes(rawKey, nibbles);
-            Run(nibbles, nibblesCount, value, true);
+            Run(nibbles, nibblesCount, value, true, overwriteUnresolvableKeccaks: overwriteUnresolvableKeccaks);
             if (array != null) ArrayPool<byte>.Shared.Return(array);
         }
 
         //[DebuggerStepThrough]
-        public void Set(Span<byte> rawKey, Rlp? value)
+        public void Set(Span<byte> rawKey, Rlp? value, bool overwriteUnresolvableKeccaks = false)
         {
-            Set(rawKey, value is null ? Array.Empty<byte>() : value.Bytes);
+            Set(rawKey, value is null ? Array.Empty<byte>() : value.Bytes, overwriteUnresolvableKeccaks: overwriteUnresolvableKeccaks);
         }
 
         private byte[]? Run(
@@ -350,6 +350,7 @@ namespace Nethermind.Trie
             byte[]? updateValue,
             bool isUpdate,
             bool ignoreMissingDelete = true,
+            bool overwriteUnresolvableKeccaks = false,
             Keccak? startRootHash = null)
         {
             if (isUpdate && startRootHash != null)
@@ -365,7 +366,7 @@ namespace Nethermind.Trie
 #endif
             
             TraverseContext traverseContext =
-                new(updatePath.Slice(0, nibblesCount), updateValue, isUpdate, ignoreMissingDelete);
+                new(updatePath.Slice(0, nibblesCount), updateValue, isUpdate, ignoreMissingDelete, overwriteUnresolvableKeccaks);
 
             // lazy stack cleaning after the previous update
             if (traverseContext.IsUpdate)
@@ -689,7 +690,21 @@ namespace Nethermind.Trie
 
             traverseContext.CurrentIndex++;
 
-            if (childNode is null)
+            bool middleNode = false;
+            if (traverseContext.OverwriteUnresolvableKeccaks && childNode is not null && childNode.NodeType == NodeType.Unknown && childNode.FullRlp is null)
+            {
+                byte[]? rlp = TrieStore.GetValueFromCurrentBatchOrStore(childNode.Keccak, null);
+                if (rlp != null)
+                {
+                    childNode.FullRlp = rlp;
+                }
+                else
+                {
+                    middleNode = true;
+                }
+            }
+
+            if (childNode is null || middleNode)
             {
                 if (traverseContext.IsRead)
                 {
@@ -936,6 +951,7 @@ namespace Nethermind.Trie
             public bool IsRead => !IsUpdate;
             public bool IsDelete => IsUpdate && UpdateValue is null;
             public bool IgnoreMissingDelete { get; }
+            public bool OverwriteUnresolvableKeccaks { get; }
             public int CurrentIndex { get; set; }
             public int RemainingUpdatePathLength => UpdatePath.Length - CurrentIndex;
 
@@ -948,7 +964,8 @@ namespace Nethermind.Trie
                 Span<byte> updatePath,
                 byte[]? updateValue,
                 bool isUpdate,
-                bool ignoreMissingDelete = true)
+                bool ignoreMissingDelete = true,
+                bool overwriteUnresolvableKeccaks = false)
             {
                 UpdatePath = updatePath;
                 if (updateValue != null && updateValue.Length == 0)
@@ -959,6 +976,7 @@ namespace Nethermind.Trie
                 UpdateValue = updateValue;
                 IsUpdate = isUpdate;
                 IgnoreMissingDelete = ignoreMissingDelete;
+                OverwriteUnresolvableKeccaks = overwriteUnresolvableKeccaks;
                 CurrentIndex = 0;
             }
 

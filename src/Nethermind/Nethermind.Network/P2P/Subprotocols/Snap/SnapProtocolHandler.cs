@@ -18,6 +18,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethermind.Core.Crypto;
 using Nethermind.Core.Specs;
 using Nethermind.Logging;
 using Nethermind.Network.P2P.EventArg;
@@ -76,7 +77,56 @@ namespace Nethermind.Network.P2P.Subprotocols.Snap
         
         public override void HandleMessage(ZeroPacket message)
         {
-            
+            int size = message.Content.ReadableBytes;
+
+            switch (message.PacketType)
+            {
+                case SnapMessageCode.GetAccountRange:
+                    GetAccountRangeMessage getAccountRangeMessage = Deserialize<GetAccountRangeMessage>(message.Content);
+                    ReportIn(getAccountRangeMessage);
+                    //Handle(getAccountRangeMessage);
+                    break;
+                case SnapMessageCode.AccountRange:
+                    AccountRangeMessage accountRangeMessage = Deserialize<AccountRangeMessage>(message.Content);
+                    ReportIn(accountRangeMessage);
+                    //Handle(msg);
+                    break;
+                case SnapMessageCode.GetStorageRanges:
+                    GetStorageRangesMessage getStorageRangesMessage = Deserialize<GetStorageRangesMessage>(message.Content);
+                    ReportIn(getStorageRangesMessage);
+                    //Handle(msg);
+                    break;
+                case SnapMessageCode.StorageRanges:
+                    StorageRangesMessage storageRangesMessage = Deserialize<StorageRangesMessage>(message.Content);
+                    ReportIn(storageRangesMessage);
+                    //Handle(msg);
+                    break;
+                case SnapMessageCode.GetByteCodes:
+                    GetByteCodesMessage getByteCodesMessage = Deserialize<GetByteCodesMessage>(message.Content);
+                    ReportIn(getByteCodesMessage);
+                    //Handle(msg);
+                    break;
+                case SnapMessageCode.ByteCodes:
+                    ByteCodesMessage byteCodesMessage = Deserialize<ByteCodesMessage>(message.Content);
+                    ReportIn(byteCodesMessage);
+                    //Handle(msg);
+                    break;
+                case SnapMessageCode.GetTrieNodes:
+                    GetTrieNodesMessage getTrieNodesMessage = Deserialize<GetTrieNodesMessage>(message.Content);
+                    ReportIn(getTrieNodesMessage);
+                    //Handle(msg);
+                    break;
+                case SnapMessageCode.TrieNodes:
+                    TrieNodesMessage trieNodesMessage = Deserialize<TrieNodesMessage>(message.Content);
+                    ReportIn(trieNodesMessage);
+                    //Handle(msg);
+                    break;
+            }
+        }
+
+        private void Handle(GetAccountRangeMessage msg)
+        {
+            throw new NotImplementedException();
         }
 
         public override void DisconnectProtocol(DisconnectReason disconnectReason, string details)
@@ -86,6 +136,15 @@ namespace Nethermind.Network.P2P.Subprotocols.Snap
 
         public Task<int> GetAccountRange()
         {
+            var request = new GetAccountRangeMessage()
+            {
+                RootHash = new Keccak("0x30453381dfe09bc62b6e97884ad0a66cd5287620604f05c2c65ccbbd15c48419"),
+                StartingHash = Keccak.Zero,
+                LimitHash = Keccak.Zero
+            };
+
+            Send(request);
+
             return Task.FromResult(0);
         }
     }

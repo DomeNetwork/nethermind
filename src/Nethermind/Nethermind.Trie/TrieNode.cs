@@ -104,7 +104,7 @@ namespace Nethermind.Trie
 
         public Keccak? Keccak { get; internal set; }
 
-        public byte[]? FullRlp { get; private set; }
+        public byte[]? FullRlp { get; internal set; }
 
         public NodeType NodeType { get; private set; }
 

@@ -1,4 +1,4 @@
-﻿//  Copyright (c) 2021 Demerzel Solutions Limited
+//  Copyright (c) 2021 Demerzel Solutions Limited
 //  This file is part of the Nethermind library.
 // 
 //  The Nethermind library is free software: you can redistribute it and/or modify
@@ -35,7 +35,7 @@ namespace Nethermind.Synchronization.SnapSync
         protected override async Task Dispatch(PeerInfo peerInfo, AccountsSyncBatch request, CancellationToken cancellationToken)
         {
             ISyncPeer peer = peerInfo.SyncPeer;
-            //TODO: constant "snap"
+            //TODO: replace with a constant "snap"
             peer.TryGetSatelliteProtocol<ISnapSyncPeer>("snap", out var handler);
             Task<int> task = handler.GetAccountRange();
             // var getNodeDataTask = peer.GetNodeData(request.RequestedNodes.Select(n => n.Hash).ToArray(), cancellationToken);

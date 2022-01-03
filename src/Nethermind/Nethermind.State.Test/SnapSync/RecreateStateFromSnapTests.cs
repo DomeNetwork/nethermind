@@ -55,6 +55,90 @@ namespace Nethermind.Store.Test
             Trie.Metrics.TreeNodeRlpEncodings = 0;
         }
 
+
+        [Test]
+        public void Test01()
+        {
+            AccountWithAddressHash[] accountsWithHashes = new AccountWithAddressHash[]
+            {
+                new AccountWithAddressHash(new Keccak("0000000000000000000000000000000000000000000000000000000001101234"), _account0),
+                new AccountWithAddressHash(new Keccak("0000000000000000000000000000000000000000000000000000000001112345"), _account1),
+                new AccountWithAddressHash(new Keccak("0000000000000000000000000000000000000000000000000000000001113456"), _account2),
+                new AccountWithAddressHash(new Keccak("0000000000000000000000000000000000000000000000000000000001114567"), _account3),
+                new AccountWithAddressHash(new Keccak("0000000000000000000000000000000000000000000000000000000001123456"), _account4),
+                new AccountWithAddressHash(new Keccak("0000000000000000000000000000000000000000000000000000000001123457"), _account5),
+            };
+
+            StateTree inputTree = new StateTree(new TrieStore(new MemDb(), LimboLogs.Instance), LimboLogs.Instance);
+            inputTree.Set(accountsWithHashes[0].AddressHash, accountsWithHashes[0].Account);
+            inputTree.Set(accountsWithHashes[1].AddressHash, accountsWithHashes[1].Account);
+            inputTree.Set(accountsWithHashes[2].AddressHash, accountsWithHashes[2].Account);
+            inputTree.Set(accountsWithHashes[3].AddressHash, accountsWithHashes[3].Account);
+            inputTree.Set(accountsWithHashes[4].AddressHash, accountsWithHashes[4].Account);
+            inputTree.Set(accountsWithHashes[5].AddressHash, accountsWithHashes[5].Account);
+            inputTree.Commit(0);
+
+            Keccak rootHash = inputTree.RootHash;   // "0x8c81279168edc449089449bc0f2136fc72c9645642845755633cf259cd97988b"
+
+            AccountProofCollector accountProofCollector = new(accountsWithHashes[0].AddressHash.Bytes);
+            inputTree.Accept(accountProofCollector, inputTree.RootHash);
+            byte[][]? firstProof = accountProofCollector.BuildResult().Proof;
+
+            accountProofCollector = new(accountsWithHashes[5].AddressHash.Bytes);
+            inputTree.Accept(accountProofCollector, inputTree.RootHash);
+            byte[][]? lastProof = accountProofCollector.BuildResult().Proof;
+
+            MemDb db = new MemDb();
+            TrieStore store = new TrieStore(db, LimboLogs.Instance);
+            StateTree tree = new StateTree(store, LimboLogs.Instance);
+            SnapProvider snapProvider = new(tree);
+
+            snapProvider.RemoveMiddleChildren(store, firstProof!, lastProof!);
+
+            IList<TrieNode> nodes = new List<TrieNode>();
+
+            for (int i = 0; i < (firstProof!).Length; i++)
+            {
+                byte[]? nodeBytes = (firstProof!)[i];
+                var node = new TrieNode(NodeType.Unknown, nodeBytes);
+                node.ResolveKey(store, i == 0);
+
+                nodes.Add(node);
+                if (i < (firstProof!).Length - 1)
+                {
+                    IBatch batch = store.GetOrStartNewBatch();
+                    batch[node.Keccak!.Bytes] = nodeBytes;
+                    //db.Set(node.Keccak!, nodeBytes);
+                }
+            }
+
+            for (int i = 0; i < (lastProof!).Length; i++)
+            {
+                byte[]? nodeBytes = (lastProof!)[i];
+                var node = new TrieNode(NodeType.Unknown, nodeBytes);
+                node.ResolveKey(store, i == 0);
+
+                nodes.Add(node);
+                if (i < (lastProof!).Length - 1)
+                {
+                    IBatch batch = store.GetOrStartNewBatch();
+                    batch[node.Keccak!.Bytes] = nodeBytes;
+                    //db.Set(node.Keccak!, nodeBytes);
+                }
+            }
+
+            tree.RootRef = nodes[0];
+
+            tree.Set(accountsWithHashes[0].AddressHash, accountsWithHashes[0].Account, true);
+            tree.Set(accountsWithHashes[1].AddressHash, accountsWithHashes[1].Account, true);
+            tree.Set(accountsWithHashes[2].AddressHash, accountsWithHashes[2].Account, true);
+            tree.Set(accountsWithHashes[3].AddressHash, accountsWithHashes[3].Account, true);
+            tree.Set(accountsWithHashes[4].AddressHash, accountsWithHashes[4].Account, true);
+            tree.Set(accountsWithHashes[5].AddressHash, accountsWithHashes[5].Account, true);
+
+            tree.Commit(0);
+        }
+
         [Test]
         public void RecreateAccountStateFromOneRange()
         {
